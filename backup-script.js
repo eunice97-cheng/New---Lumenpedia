@@ -196,11 +196,26 @@ document.addEventListener("DOMContentLoaded", () => {
     // ================== INITIALIZE EVERYTHING ==================
     setTimeout(initializeAllCarousels, 100);
     showAllSections();
-});//
+});
 
 
 // ================== NETFLIX CAROUSEL WITH INFINITE LOOP & CENTER EFFECTS ==================
 function setupCarousel(popular, leftBtn, rightBtn) {
+    
+        // Add this check at the beginning
+    if (!popular || !leftBtn || !rightBtn) {
+        console.warn('Carousel elements missing');
+        return;
+    }
+    
+    const cards = popular.querySelectorAll('.pop-card');
+    if (cards.length === 0) {
+        leftBtn.style.display = "none";
+        rightBtn.style.display = "none";
+        return;
+    }
+    // End of added check
+
     if (!popular) return;
 
     const FIXED_W = 200;
@@ -364,4 +379,3 @@ function setupCarousel(popular, leftBtn, rightBtn) {
     scrollToIndex(0, false);
     updateCardFocus();
 }
-// ================== END OF NETFLIX CAROUSEL ==================

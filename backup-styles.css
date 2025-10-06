@@ -26,6 +26,7 @@ body {
     background: #000;
     color: #cfecff;
     overflow-y: scroll;
+    overflow-x: hidden;
 }
 
 body::before {
