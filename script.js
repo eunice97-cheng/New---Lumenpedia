@@ -201,13 +201,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ================== NETFLIX CAROUSEL WITH INFINITE LOOP & CENTER EFFECTS ==================
 function setupCarousel(popular, leftBtn, rightBtn) {
-    
-        // Add this check at the beginning
+
+    // Add this check at the beginning
     if (!popular || !leftBtn || !rightBtn) {
         console.warn('Carousel elements missing');
         return;
     }
-    
+
     const cards = popular.querySelectorAll('.pop-card');
     if (cards.length === 0) {
         leftBtn.style.display = "none";
@@ -379,3 +379,99 @@ function setupCarousel(popular, leftBtn, rightBtn) {
     scrollToIndex(0, false);
     updateCardFocus();
 }
+
+// ================== EXPANDABLE HEADER IMAGES ==================
+
+document.addEventListener('DOMContentLoaded', function () {
+    const classicImage = document.getElementById('classic-image');
+    const mainImage = document.getElementById('main-image');
+    const classicColumn = document.getElementById('classic-column');
+    const mainColumn = document.getElementById('main-column');
+
+    // Don't add close buttons immediately - add them only when expanding
+    function addCloseButtons() {
+        if (!classicColumn.querySelector('.close-btn')) {
+            classicColumn.innerHTML += '<div class="close-btn">×</div>';
+        }
+        if (!mainColumn.querySelector('.close-btn')) {
+            mainColumn.innerHTML += '<div class="close-btn">×</div>';
+        }
+
+        // Re-attach close button event listeners
+        const closeBtns = document.querySelectorAll('.close-btn');
+        closeBtns.forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                resetColumns();
+            });
+        });
+    }
+
+    function resetColumns() {
+        classicColumn.classList.remove('expanded', 'hidden');
+        mainColumn.classList.remove('expanded', 'hidden');
+        // Remove grayout from both images
+        classicImage.classList.remove('grayed-out');
+        mainImage.classList.remove('grayed-out');
+
+        // Remove close buttons when returning to normal view
+        const closeBtns = document.querySelectorAll('.close-btn');
+        closeBtns.forEach(btn => btn.remove());
+    }
+
+    const closeBtns = document.querySelectorAll('.close-btn');
+
+    function resetColumns() {
+        classicColumn.classList.remove('expanded', 'hidden');
+        mainColumn.classList.remove('expanded', 'hidden');
+        // Remove grayout from both images
+        classicImage.classList.remove('grayed-out');
+        mainImage.classList.remove('grayed-out');
+    }
+
+    function expandClassic() {
+    resetColumns();
+    classicColumn.classList.add('expanded');
+    mainColumn.classList.add('hidden');
+    // Gray out the right image
+    mainImage.classList.add('grayed-out');
+    // Add close buttons when expanding
+    addCloseButtons();
+}
+
+function expandMain() {
+    resetColumns();
+    mainColumn.classList.add('expanded');
+    classicColumn.classList.add('hidden');
+    // Gray out the left image
+    classicImage.classList.add('grayed-out');
+    // Add close buttons when expanding
+    addCloseButtons();
+}
+
+    // Expand classic column
+    classicImage.addEventListener('click', function () {
+        if (classicColumn.classList.contains('expanded')) {
+            resetColumns(); // Return to normal view
+        } else {
+            expandClassic(); // Expand classic
+        }
+    });
+
+    // Expand main column
+    mainImage.addEventListener('click', function () {
+        if (mainColumn.classList.contains('expanded')) {
+            resetColumns(); // Return to normal view
+        } else {
+            expandMain(); // Expand main
+        }
+    });
+
+    // Close expanded view - return to normal (2 columns)
+    closeBtns.forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            resetColumns();
+        });
+    });
+});
