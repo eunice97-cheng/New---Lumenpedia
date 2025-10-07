@@ -9,7 +9,6 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log(`Found ${allPopularSections.length} carousel sections`);
 
         allPopularSections.forEach((wrapper, index) => {
-            // Skip if already initialized
             if (wrapper.dataset.initialized) return;
 
             const popular = wrapper.querySelector('.popular');
@@ -90,6 +89,17 @@ document.addEventListener("DOMContentLoaded", () => {
     // ================== SEARCH FUNCTIONALITY ==================
     searchEl.addEventListener('input', () => {
         const query = searchEl.value.trim().toLowerCase();
+        
+        // Hide Most Searched section when searching
+        const mostSearchedSection = document.querySelector('.popular-section');
+        if (mostSearchedSection) {
+            if (query === '') {
+                mostSearchedSection.style.display = 'block';
+            } else {
+                mostSearchedSection.style.display = 'none';
+            }
+        }
+
         if (query === '') {
             showAllSections();
             deactivateAllSectionTitles();
@@ -140,6 +150,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ================== HELPER FUNCTIONS ==================
     function showAllSections() {
+        // Show Most Searched section when showing all
+        const mostSearchedSection = document.querySelector('.popular-section');
+        if (mostSearchedSection) {
+            mostSearchedSection.style.display = 'block';
+        }
+
         letterSections.forEach(section => {
             section.style.display = 'block';
             const cards = section.querySelectorAll('.pop-card');
@@ -150,6 +166,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function showSectionByLetter(letter) {
+        // Hide Most Searched section when showing specific letter
+        const mostSearchedSection = document.querySelector('.popular-section');
+        if (mostSearchedSection) {
+            mostSearchedSection.style.display = 'none';
+        }
+
         hideAllSections();
         removeNoResultsMessage();
 
@@ -184,8 +206,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const message = document.createElement('div');
         message.className = 'no-results';
         message.innerHTML = `<p style="text-align: center; color: var(--neon-pink); margin: 2rem 0; font-size: 1.2rem;">No results found for "${searchEl.value}"</p>`;
-        const popularSection = document.querySelector('.popular-section');
-        if (popularSection) popularSection.parentNode.insertBefore(message, popularSection.nextSibling);
+        
+        // Insert after the search section
+        const heroSection = document.querySelector('.hero');
+        if (heroSection) {
+            heroSection.parentNode.insertBefore(message, heroSection.nextSibling);
+        }
     }
 
     function removeNoResultsMessage() {
@@ -198,280 +224,220 @@ document.addEventListener("DOMContentLoaded", () => {
     showAllSections();
 });
 
-
-// ================== NETFLIX CAROUSEL WITH INFINITE LOOP & CENTER EFFECTS ==================
+// ================== CAROUSEL WITH PROPER LINK SUPPORT ==================
 function setupCarousel(popular, leftBtn, rightBtn) {
-
-    // Add this check at the beginning
     if (!popular || !leftBtn || !rightBtn) {
         console.warn('Carousel elements missing');
         return;
     }
 
-    const cards = popular.querySelectorAll('.pop-card');
+    const cards = Array.from(popular.querySelectorAll('.pop-card'));
     if (cards.length === 0) {
         leftBtn.style.display = "none";
         rightBtn.style.display = "none";
         return;
     }
-    // End of added check
 
-    if (!popular) return;
-
-    const FIXED_W = 200;
-    const gap = parseInt(getComputedStyle(popular).gap) || 20;
-    const cardWithGap = FIXED_W + gap;
-
-    function lockCardSize(card) {
-        card.style.flex = `0 0 ${FIXED_W}px`;
-        card.style.width = `${FIXED_W}px`;
-        card.style.minWidth = `${FIXED_W}px`;
-        card.style.maxWidth = `${FIXED_W}px`;
-    }
-
-    // Remove existing clones
-    const existingClones = popular.querySelectorAll('.pop-card.clone');
-    existingClones.forEach(clone => clone.remove());
-
-    const originalCards = Array.from(popular.querySelectorAll('.pop-card:not(.clone)'));
-    if (originalCards.length === 0) return;
-
-    originalCards.forEach(lockCardSize);
-
-    const cardCount = originalCards.length;
+    const cardWidth = 200;
+    const gap = 20;
+    const cardWithGap = cardWidth + gap;
     const visibleCards = Math.max(1, Math.floor(popular.offsetWidth / cardWithGap));
 
-    // CASE 1: Not enough cards for scrolling
-    if (cardCount <= visibleCards) {
-        leftBtn.style.display = "none";
-        rightBtn.style.display = "none";
-        removeAllFocusEffects();
-        return;
-    }
-
-    // CASE 2: Enable Netflix-style scrolling
-    leftBtn.style.display = "block";
-    rightBtn.style.display = "block";
-
-    // Add clones for infinite loop
-    for (let i = cardCount - visibleCards; i < cardCount; i++) {
-        const clone = originalCards[i].cloneNode(true);
-        clone.classList.add('clone');
-        lockCardSize(clone);
-        popular.insertBefore(clone, popular.firstChild);
-    }
-
-    for (let i = 0; i < visibleCards; i++) {
-        const clone = originalCards[i].cloneNode(true);
-        clone.classList.add('clone');
-        lockCardSize(clone);
-        popular.appendChild(clone);
-    }
-
-    const startScroll = cardWithGap * visibleCards;
-    popular.scrollLeft = startScroll;
-    let currentIndex = 0;
-    let isScrolling = false;
-
-    // Center card scaling and glow effects
-    function updateCardFocus() {
-        const cards = Array.from(popular.querySelectorAll('.pop-card'));
-        if (!cards.length) return;
-
-        const wrapperRect = popular.getBoundingClientRect();
-        const centerX = wrapperRect.left + wrapperRect.width / 2;
-
-        let closestCard = null;
-        let closestDistance = Infinity;
-
-        cards.forEach(card => {
-            const rect = card.getBoundingClientRect();
-            const cardCenter = rect.left + rect.width / 2;
-            const distance = Math.abs(centerX - cardCenter);
-
-            // Scale and opacity based on distance from center
-            const scale = Math.max(0.85, 1 - distance / 600);
-            const opacity = Math.max(0.6, 1 - distance / 800);
-
-            card.style.transform = `scale(${scale})`;
-            card.style.opacity = opacity;
-            card.classList.remove('active-card');
-
-            if (distance < closestDistance) {
-                closestDistance = distance;
-                closestCard = card;
-            }
-        });
-
-        // Add active class to center card
-        if (closestCard) {
-            closestCard.classList.add('active-card');
-            closestCard.style.transform = `scale(1.05)`;
-            closestCard.style.opacity = '1';
-        }
-    }
-
-    // Infinite scroll handler
-    function handleInfiniteScroll() {
-        if (isScrolling) return;
-
-        const scrollLeft = popular.scrollLeft;
-        const scrollWidth = popular.scrollWidth;
-        const clientWidth = popular.clientWidth;
-
-        // Jump to clones for infinite effect
-        if (scrollLeft <= 0) {
-            isScrolling = true;
-            popular.scrollLeft = scrollWidth - (2 * clientWidth);
-            setTimeout(() => { isScrolling = false; }, 50);
-        } else if (scrollLeft >= scrollWidth - clientWidth) {
-            isScrolling = true;
-            popular.scrollLeft = clientWidth;
-            setTimeout(() => { isScrolling = false; }, 50);
-        }
-    }
-
-    // Scroll to specific index
-    function scrollToIndex(index, smooth = true) {
-        const left = startScroll + index * cardWithGap;
-        popular.scrollTo({ left, behavior: smooth ? "smooth" : "auto" });
-        currentIndex = index;
-    }
-
-    // Scroll carousel
-    function scrollCarousel(direction) {
-        if (isScrolling) return;
-        isScrolling = true;
-
-        let nextIndex = currentIndex + direction;
-        if (nextIndex >= cardCount) {
-            nextIndex = 0;
-        } else if (nextIndex < 0) {
-            nextIndex = cardCount - 1;
-        }
-
-        scrollToIndex(nextIndex);
-        setTimeout(() => { isScrolling = false; }, 300);
-    }
-
-    // Remove focus effects (for non-scrollable sections)
-    function removeAllFocusEffects() {
-        const cards = Array.from(popular.querySelectorAll('.pop-card'));
-        cards.forEach(card => {
-            card.style.transform = 'scale(1)';
-            card.style.opacity = '1';
-            card.classList.remove('active-card');
-        });
-    }
-
-    // Event listeners
-    leftBtn.addEventListener("click", () => scrollCarousel(-1));
-    rightBtn.addEventListener("click", () => scrollCarousel(1));
-
-    popular.addEventListener("scroll", () => {
-        handleInfiniteScroll();
-        updateCardFocus();
+    // Set fixed card sizes
+    cards.forEach(card => {
+        card.style.flex = `0 0 ${cardWidth}px`;
+        card.style.width = `${cardWidth}px`;
+        card.style.minWidth = `${cardWidth}px`;
+        card.style.maxWidth = `${cardWidth}px`;
     });
 
-    window.addEventListener("resize", updateCardFocus);
+    let currentPosition = 0;
+    let maxScroll = popular.scrollWidth - popular.clientWidth;
 
-    // Initial setup
-    scrollToIndex(0, false);
-    updateCardFocus();
+    // Update button states
+    function updateButtonStates() {
+        leftBtn.style.opacity = popular.scrollLeft <= 10 ? "0.5" : "1";
+        rightBtn.style.opacity = popular.scrollLeft >= maxScroll - 10 ? "0.5" : "1";
+        
+        leftBtn.disabled = popular.scrollLeft <= 10;
+        rightBtn.disabled = popular.scrollLeft >= maxScroll - 10;
+    }
+
+    // Scroll functions
+    function scrollLeft() {
+        const newPosition = Math.max(0, popular.scrollLeft - (visibleCards * cardWithGap));
+        popular.scrollTo({ left: newPosition, behavior: 'smooth' });
+    }
+
+    function scrollRight() {
+        const newPosition = Math.min(maxScroll, popular.scrollLeft + (visibleCards * cardWithGap));
+        popular.scrollTo({ left: newPosition, behavior: 'smooth' });
+    }
+
+    // Event listeners for buttons
+    leftBtn.addEventListener("click", scrollLeft);
+    rightBtn.addEventListener("click", scrollRight);
+
+    // Update max scroll on resize and update button states on scroll
+    popular.addEventListener("scroll", updateButtonStates);
+    window.addEventListener("resize", () => {
+        maxScroll = popular.scrollWidth - popular.clientWidth;
+        updateButtonStates();
+    });
+
+    // FIX FOR LINKS: Add a simple click handler that doesn't interfere
+    popular.addEventListener('click', (e) => {
+        const link = e.target.closest('.pop-card-link');
+        if (link && link.href) {
+            // Allow the link to work normally
+            return true;
+        }
+    }, true); // Use capture phase to handle links early
+
+    // Enhanced drag scrolling
+    let isDragging = false;
+    let startX;
+    let scrollLeftStart;
+
+    popular.addEventListener('mousedown', (e) => {
+        // Don't interfere with link clicks
+        if (e.target.closest('a') || e.target.closest('button')) {
+            return;
+        }
+        isDragging = true;
+        popular.style.cursor = 'grabbing';
+        popular.style.scrollSnapType = 'none';
+        startX = e.pageX - popular.offsetLeft;
+        scrollLeftStart = popular.scrollLeft;
+    });
+
+    popular.addEventListener('mouseleave', () => {
+        isDragging = false;
+        popular.style.cursor = 'grab';
+        popular.style.scrollSnapType = 'x mandatory';
+    });
+
+    popular.addEventListener('mouseup', () => {
+        isDragging = false;
+        popular.style.cursor = 'grab';
+        popular.style.scrollSnapType = 'x mandatory';
+        
+        // Re-enable snap after drag
+        setTimeout(() => {
+            popular.style.scrollSnapType = 'x mandatory';
+        }, 100);
+    });
+
+    popular.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const x = e.pageX - popular.offsetLeft;
+        const walk = (x - startX) * 2;
+        popular.scrollLeft = scrollLeftStart - walk;
+    });
+
+    // Touch support for mobile
+    popular.addEventListener('touchstart', (e) => {
+        if (e.target.closest('a') || e.target.closest('button')) {
+            return;
+        }
+        startX = e.touches[0].pageX - popular.offsetLeft;
+        scrollLeftStart = popular.scrollLeft;
+    }, { passive: true });
+
+    popular.addEventListener('touchmove', (e) => {
+        if (e.target.closest('a') || e.target.closest('button')) {
+            return;
+        }
+        const x = e.touches[0].pageX - popular.offsetLeft;
+        const walk = (x - startX) * 2;
+        popular.scrollLeft = scrollLeftStart - walk;
+    }, { passive: true });
+
+    // Initial button state
+    updateButtonStates();
 }
 
 // ================== EXPANDABLE HEADER IMAGES ==================
-
 document.addEventListener('DOMContentLoaded', function () {
     const classicImage = document.getElementById('classic-image');
     const mainImage = document.getElementById('main-image');
     const classicColumn = document.getElementById('classic-column');
     const mainColumn = document.getElementById('main-column');
 
-    // Don't add close buttons immediately - add them only when expanding
     function addCloseButtons() {
         if (!classicColumn.querySelector('.close-btn')) {
-            classicColumn.innerHTML += '<div class="close-btn">×</div>';
-        }
-        if (!mainColumn.querySelector('.close-btn')) {
-            mainColumn.innerHTML += '<div class="close-btn">×</div>';
-        }
-
-        // Re-attach close button event listeners
-        const closeBtns = document.querySelectorAll('.close-btn');
-        closeBtns.forEach(btn => {
-            btn.addEventListener('click', function (e) {
+            const closeBtn = document.createElement('div');
+            closeBtn.className = 'close-btn';
+            closeBtn.innerHTML = '×';
+            closeBtn.addEventListener('click', function (e) {
                 e.stopPropagation();
                 resetColumns();
             });
-        });
+            classicColumn.appendChild(closeBtn);
+        }
+        if (!mainColumn.querySelector('.close-btn')) {
+            const closeBtn = document.createElement('div');
+            closeBtn.className = 'close-btn';
+            closeBtn.innerHTML = '×';
+            closeBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                resetColumns();
+            });
+            mainColumn.appendChild(closeBtn);
+        }
     }
 
     function resetColumns() {
         classicColumn.classList.remove('expanded', 'hidden');
         mainColumn.classList.remove('expanded', 'hidden');
-        // Remove grayout from both images
         classicImage.classList.remove('grayed-out');
         mainImage.classList.remove('grayed-out');
 
-        // Remove close buttons when returning to normal view
         const closeBtns = document.querySelectorAll('.close-btn');
         closeBtns.forEach(btn => btn.remove());
     }
 
-    const closeBtns = document.querySelectorAll('.close-btn');
-
-    function resetColumns() {
-        classicColumn.classList.remove('expanded', 'hidden');
-        mainColumn.classList.remove('expanded', 'hidden');
-        // Remove grayout from both images
-        classicImage.classList.remove('grayed-out');
-        mainImage.classList.remove('grayed-out');
+    function expandClassic() {
+        resetColumns();
+        classicColumn.classList.add('expanded');
+        mainColumn.classList.add('hidden');
+        mainImage.classList.add('grayed-out');
+        addCloseButtons();
     }
 
-    function expandClassic() {
-    resetColumns();
-    classicColumn.classList.add('expanded');
-    mainColumn.classList.add('hidden');
-    // Gray out the right image
-    mainImage.classList.add('grayed-out');
-    // Add close buttons when expanding
-    addCloseButtons();
-}
-
-function expandMain() {
-    resetColumns();
-    mainColumn.classList.add('expanded');
-    classicColumn.classList.add('hidden');
-    // Gray out the left image
-    classicImage.classList.add('grayed-out');
-    // Add close buttons when expanding
-    addCloseButtons();
-}
+    function expandMain() {
+        resetColumns();
+        mainColumn.classList.add('expanded');
+        classicColumn.classList.add('hidden');
+        classicImage.classList.add('grayed-out');
+        addCloseButtons();
+    }
 
     // Expand classic column
     classicImage.addEventListener('click', function () {
         if (classicColumn.classList.contains('expanded')) {
-            resetColumns(); // Return to normal view
+            resetColumns();
         } else {
-            expandClassic(); // Expand classic
+            expandClassic();
         }
     });
 
     // Expand main column
     mainImage.addEventListener('click', function () {
         if (mainColumn.classList.contains('expanded')) {
-            resetColumns(); // Return to normal view
+            resetColumns();
         } else {
-            expandMain(); // Expand main
+            expandMain();
         }
     });
-
-    // Close expanded view - return to normal (2 columns)
-    closeBtns.forEach(btn => {
-        btn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            resetColumns();
-        });
-    });
 });
+
+// ================== ADDITIONAL LINK FIX FOR A SECTION ==================
+setTimeout(() => {
+    // Force links to work by reattaching event listeners
+    const allLinks = document.querySelectorAll('.pop-card-link');
+    allLinks.forEach(link => {
+        link.setAttribute('onclick', `window.location.href='${link.href}'; return false;`);
+    });
+}, 500);

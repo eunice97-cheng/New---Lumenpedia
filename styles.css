@@ -465,6 +465,7 @@ input:focus {
     align-items: flex-start;
     width: 100%;
     cursor: grab;
+    pointer-events: auto;
 }
 
 .popular.grabbing {
@@ -492,6 +493,7 @@ input:focus {
     padding: 10px;
     box-sizing: border-box;
     scroll-snap-align: start;
+    pointer-events: none;
 }
 
 .pop-card.clone {
@@ -651,6 +653,9 @@ input:focus {
     text-decoration: none;
     color: inherit;
     display: block;
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 2;
 }
 
 .pop-card-link:hover .pop-card {
@@ -668,6 +673,14 @@ input:focus {
     color: var(--neon-pink);
     text-shadow: 0 0 8px var(--neon-pink),
         0 0 16px rgba(255, 62, 207, 0.7);
+}
+
+.pop-card-link * {
+    pointer-events: none;
+}
+
+.pop-card-link .pop-card {
+    pointer-events: auto;
 }
 
 /* ================= SCROLL BUTTONS ================= */
